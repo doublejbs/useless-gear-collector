@@ -1,0 +1,124 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")   // PgBouncer (포트 6543) — 앱용
+  directUrl = env("DIRECT_URL")     // Direct (포트 5432) — 마이그레이션용
+}
+
+model ProductIdSeq {
+  dateKey String @id @map("date_key") @db.Char(6)
+  lastSeq Int    @default(0) @map("last_seq")
+
+  @@map("product_id_seq")
+}
+
+model BrandAlias {
+  alias     String @id
+  canonical String
+
+  @@map("brand_aliases")
+}
+
+model CrawlSource {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name                String   @unique
+  adapterType         String   @map("adapter_type")
+  baseUrl             String?  @map("base_url")
+  crawlFrequencyHours Int      @default(168) @map("crawl_frequency_hours")
+  isActive            Boolean  @default(true) @map("is_active")
+  config              Json?
+
+  jobs    CrawlJob[]
+  sources ProductSource[]
+
+  @@map("crawl_sources")
+}
+
+model Product {
+  productId     String   @id @map("product_id") @db.Char(8)
+  groupId       String   @map("group_id")
+  category      String
+  brandKr       String   @default("") @map("brand_kr")
+  brandEn       String   @default("") @map("brand_en")
+  nameKr        String   @default("") @map("name_kr")
+  nameEn        String   @default("") @map("name_en")
+  colorKr       String   @default("") @map("color_kr")
+  colorEn       String   @default("") @map("color_en")
+  sizeKr        String   @default("") @map("size_kr")
+  sizeEn        String   @default("") @map("size_en")
+  weight        String   @default("")
+  salesRegion   String   @default("") @map("sales_region")
+  naverImageUrl String   @default("") @map("naver_image_url")
+  specs         Json     @default("{}")
+  needsReview   Boolean  @default(false) @map("needs_review")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  sources ProductSource[]
+
+  @@unique([brandEn, nameEn, colorEn, sizeEn])
+  @@index([groupId])
+  @@index([category])
+  @@index([brandEn])
+  @@index([salesRegion])
+  @@index([needsReview])
+  @@map("products")
+}
+
+model CrawlJob {
+  id           String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  sourceId     String?   @map("source_id") @db.Uuid
+  status       String
+  startedAt    DateTime? @map("started_at")
+  finishedAt   DateTime? @map("finished_at")
+  itemsFound   Int       @default(0) @map("items_found")
+  itemsUpdated Int       @default(0) @map("items_updated")
+  error        String?
+  retryCount   Int       @default(0) @map("retry_count")
+
+  source  CrawlSource?    @relation(fields: [sourceId], references: [id])
+  sources ProductSource[]
+
+  @@map("crawl_jobs")
+}
+
+model ProductSource {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productId     String    @map("product_id") @db.Char(8)
+  sourceId      String    @map("source_id") @db.Uuid
+  crawlJobId    String?   @map("crawl_job_id") @db.Uuid
+  sourceUrl     String    @unique @map("source_url")
+  price         Decimal?
+  currency      String?   @db.VarChar(3)
+  imageUrl      String?   @map("image_url")
+  status        String    @default("active")
+  lastCrawledAt DateTime? @map("last_crawled_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  product  Product     @relation(fields: [productId], references: [productId])
+  source   CrawlSource @relation(fields: [sourceId], references: [id])
+  crawlJob CrawlJob?   @relation(fields: [crawlJobId], references: [id])
+  prices   PriceHistory[]
+
+  @@index([sourceId])
+  @@index([status])
+  @@index([lastCrawledAt])
+  @@map("product_sources")
+}
+
+model PriceHistory {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  productSourceId String   @map("product_source_id") @db.Uuid
+  price           Decimal?
+  currency        String?  @db.VarChar(3)
+  recordedAt      DateTime @default(now()) @map("recorded_at")
+
+  productSource ProductSource @relation(fields: [productSourceId], references: [id])
+
+  @@index([productSourceId, recordedAt(sort: Desc)])
+  @@map("price_history")
+}
