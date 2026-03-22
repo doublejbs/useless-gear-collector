@@ -382,9 +382,13 @@ CREATE INDEX ON price_history(product_source_id, recorded_at DESC);
 
 | 역할 | 기술 |
 |------|------|
-| 언어 | Python |
+| 언어 | TypeScript (Node.js) |
 | 브라우저 자동화 | Playwright |
-| AI 추출 | Claude Haiku (Anthropic API) |
-| 스케줄링 | Celery + Redis |
-| DB | PostgreSQL |
+| AI 추출 | Claude Haiku (Anthropic TypeScript SDK) |
+| 스케줄링 | GitHub Actions (cron) |
+| ORM | Prisma |
+| DB | Supabase (managed PostgreSQL) |
+| HTML 파싱 | Cheerio |
+| HTTP 클라이언트 | fetch (native) |
+| 테스트 | Vitest |
 | 알림 | Slack webhook (crawl 실패 시) |
