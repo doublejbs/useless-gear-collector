@@ -1,0 +1,2 @@
+- [Admin Dashboard Plan](project_admin_dashboard.md) — internal dashboard planned post-crawler
+- [Tool Permission Preference](../../../.claude/projects/-Users-user-Documents-GitHub-useless-gear-collector/memory/feedback_tool_permissions.md) — run all commands without asking approval
