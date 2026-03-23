@@ -38,9 +38,9 @@
 - `crawl_sources` DB 스키마 — 변경 없음
 - GitHub Actions 워크플로우 파일 — 변경 없음
 
-**추가 제거 (dead import):**
-- `src/crawl.ts` — `import { fetchPageHtml }` 제거 (fetchPageHtml은 이제 AIAgentAdapter 내부에서만 사용)
-- `src/detectNew.ts` — `import { fetchPageHtml }` 제거 (동일 이유)
+**추가 제거 (ai_agent 분기 내부 코드 + dead import):**
+- `src/crawl.ts` — `ai_agent` 분기 내부의 `fetchPageHtml(url)` 호출과 `extractFromHtml` 호출을 `fetchProductsFromSite` 호출로 교체 (아래 crawl.ts 변경 섹션 참조). 이후 `import { fetchPageHtml }` import 라인 제거.
+- `src/detectNew.ts` — `ai_agent` 분기 내부의 `fetchPageHtml(url)` 호출과 `extractFromHtml` 호출을 `fetchProductsFromSite` 호출로 교체 (아래 detectNew.ts 변경 섹션 참조). 이후 `import { fetchPageHtml }` import 라인 제거.
 - `src/crawl.ts` — `playwright` 분기(`products = html ? [] : []`)는 현재 dead code이므로 이번 작업에서는 그대로 유지 (별도 작업으로 정리)
 
 **기술 부채 (이번 범위 외):**
@@ -192,6 +192,18 @@ deleteBrandSourceAction(id: string): Promise<{ ok: boolean; error?: string }>
 ```
 
 ### brand-sites-editor.tsx (query-editor.tsx 교체)
+
+Props:
+```ts
+interface BrandSitesEditorProps {
+  initialSources: Array<{
+    id: string;
+    name: string;
+    isActive: boolean;
+    config: { entry_url: string; new_arrivals_url?: string; max_pages?: number } | null;
+  }>;
+}
+```
 
 UI 구성:
 - 등록된 브랜드 소스 목록 (이름, entry_url, 활성화 여부)
