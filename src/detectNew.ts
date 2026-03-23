@@ -1,27 +1,28 @@
 import { prisma } from "./db.js";
-import { NaverAdapter } from "./adapters/naver.js";
 import { AIAgentAdapter } from "./adapters/aiAgent.js";
-import { fetchPageHtml } from "./adapters/playwright.js";
 import { filterNewUrls } from "./pipeline/detectNew.js";
 import { ingestProduct } from "./pipeline/ingest.js";
 import { sendSlackAlert } from "./alerts/slack.js";
 import { config } from "./config.js";
+import type { RawProduct } from "./adapters/types.js";
 
 async function runDetectNew(): Promise<void> {
   const sources = await prisma.crawlSource.findMany({ where: { isActive: true } });
 
   for (const source of sources) {
     try {
-      let products: Awaited<ReturnType<NaverAdapter["fetchProducts"]>> = [];
-      if (source.adapterType === "naver_api") {
-        const adapter = new NaverAdapter(config.naverClientId, config.naverClientSecret);
-        products = await adapter.fetchNewProducts((source.config as Record<string, string>) ?? {});
-      } else if (source.adapterType === "ai_agent") {
+      let products: RawProduct[] = [];
+
+      if (source.adapterType === "ai_agent") {
         const adapter = new AIAgentAdapter(config.anthropicApiKey);
-        const cfg = (source.config as Record<string, string>) ?? {};
-        const url = cfg["new_arrivals_url"] ?? cfg["entry_url"] ?? "";
-        const html = await fetchPageHtml(url);
-        if (html) products = await adapter.extractFromHtml(html, url);
+        const cfg = (source.config as Record<string, unknown>) ?? {};
+        const url =
+          (cfg["new_arrivals_url"] as string) ??
+          (cfg["entry_url"] as string) ??
+          "";
+        if (url) {
+          products = await adapter.fetchProductsFromSite(url, 3);
+        }
       }
 
       const candidateUrls = new Set(products.map((p) => p.sourceUrl).filter(Boolean));
