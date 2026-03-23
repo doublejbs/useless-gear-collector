@@ -25,46 +25,54 @@ const INITIAL_BRAND_SOURCES = [
 ] as const;
 
 async function main() {
-  console.log("1. naver_api 소스 비활성화...");
-  const naverSources = await prisma.crawlSource.findMany({
-    where: { adapterType: "naver_api" },
-  });
+  await prisma.$transaction(async (tx) => {
+    console.log("1. naver_api 소스 비활성화...");
 
-  for (const source of naverSources) {
-    await prisma.crawlSource.update({
-      where: { id: source.id },
+    // Fix 3: single updateMany for deactivating naver sources
+    await tx.crawlSource.updateMany({
+      where: { adapterType: "naver_api" },
       data: { isActive: false },
     });
 
-    const updated = await prisma.productSource.updateMany({
-      where: { sourceId: source.id, status: "active" },
-      data: { status: "discontinued" },
+    // Mark their product_sources as discontinued
+    const naverSources = await tx.crawlSource.findMany({
+      where: { adapterType: "naver_api" },
+      select: { id: true, name: true },
     });
-    console.log(`  - ${source.name}: product_sources ${updated.count}개 discontinued 처리`);
-  }
-
-  console.log("2. 브랜드 공식 사이트 소스 생성...");
-  for (const brand of INITIAL_BRAND_SOURCES) {
-    const existing = await prisma.crawlSource.findFirst({ where: { name: brand.name } });
-    if (existing) {
-      console.log(`  - ${brand.name}: 이미 존재함, 건너뜀`);
-      continue;
+    for (const source of naverSources) {
+      const updated = await tx.productSource.updateMany({
+        where: { sourceId: source.id, status: "active" },
+        data: { status: "discontinued" },
+      });
+      console.log(`  - ${source.name}: product_sources ${updated.count}개 discontinued 처리`);
     }
-    await prisma.crawlSource.create({
-      data: {
-        name: brand.name,
-        adapterType: "ai_agent",
-        isActive: true,
-        config: {
-          entry_url: brand.entryUrl,
-          ...(brand.newArrivalsUrl ? { new_arrivals_url: brand.newArrivalsUrl } : {}),
-        },
-      },
-    });
-    console.log(`  - ${brand.name}: 생성 완료 (${brand.entryUrl})`);
-  }
 
-  console.log("완료.");
+    console.log("2. 브랜드 공식 사이트 소스 생성...");
+    for (const brand of INITIAL_BRAND_SOURCES) {
+      // Fix 2: tighten idempotency check to also match adapterType
+      const existing = await tx.crawlSource.findFirst({
+        where: { name: brand.name, adapterType: "ai_agent" },
+      });
+      if (existing) {
+        console.log(`  - ${brand.name}: 이미 존재함, 건너뜀`);
+        continue;
+      }
+      await tx.crawlSource.create({
+        data: {
+          name: brand.name,
+          adapterType: "ai_agent",
+          isActive: true,
+          config: {
+            entry_url: brand.entryUrl,
+            ...(brand.newArrivalsUrl ? { new_arrivals_url: brand.newArrivalsUrl } : {}),
+          },
+        },
+      });
+      console.log(`  - ${brand.name}: 생성 완료 (${brand.entryUrl})`);
+    }
+
+    console.log("완료.");
+  });
 }
 
 main()
