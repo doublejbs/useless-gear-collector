@@ -19,7 +19,12 @@ async function runCrawl(): Promise<void> {
       let products: Awaited<ReturnType<NaverAdapter["fetchProducts"]>> = [];
       if (source.adapterType === "naver_api") {
         const adapter = new NaverAdapter(config.naverClientId, config.naverClientSecret);
-        products = await adapter.fetchProducts((source.config as Record<string, string>) ?? {});
+        const cfg = (source.config as Record<string, unknown>) ?? {};
+        const queries = (cfg["queries"] as string[]) ?? [cfg["query"] as string ?? "백패킹"];
+        for (const q of queries) {
+          const batch = await adapter.fetchProducts({ query: q });
+          products.push(...batch);
+        }
       } else if (source.adapterType === "playwright") {
         const cfg = (source.config as Record<string, string>) ?? {};
         const html = await fetchPageHtml(cfg["entry_url"] ?? "");
