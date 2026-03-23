@@ -14,7 +14,7 @@ export async function ingestProduct(
   prisma: PrismaClient,
   raw: RawProduct,
   sourceId: string,
-  jobId: string,
+  jobId: string | undefined,
 ): Promise<string> {
   const brandEn = await resolveBrand(prisma, raw.brandEn);
   const weight = normalizeWeight(raw.weightRaw ?? "");
@@ -22,50 +22,46 @@ export async function ingestProduct(
   const specs = normalizeSpecs(raw.category, raw.specsRaw ?? {});
   const needsReview = raw.needsReviewFlag ?? false;
 
+  // Check if product exists first to determine productId
   const existing = await prisma.product.findFirst({
     where: { brandEn, nameEn: raw.nameEn, colorEn: raw.colorEn ?? "", sizeEn: raw.sizeEn ?? "" },
     select: { productId: true },
   });
 
-  let productId: string;
+  const productId = existing?.productId ?? await generateProductId(prisma);
+  const groupId = `${brandEn}_${raw.nameEn}`.toLowerCase().replace(/[\s-]/g, "_");
 
-  if (existing) {
-    productId = existing.productId;
-    await prisma.product.update({
-      where: { productId },
-      data: {
-        ...(weight && { weight }),
-        ...(Object.keys(specs).length && { specs }),
-        ...(raw.brandKr && { brandKr: raw.brandKr }),
-        ...(raw.nameKr && { nameKr: raw.nameKr }),
-        ...(raw.colorKr && { colorKr: raw.colorKr }),
-        ...(raw.salesRegion && { salesRegion: raw.salesRegion }),
-        ...(needsReview && { needsReview: true }),
-      },
-    });
-  } else {
-    productId = await generateProductId(prisma);
-    const groupId = `${brandEn}_${raw.nameEn}`.toLowerCase().replace(/[\s-]/g, "_");
-    await prisma.product.create({
-      data: {
-        productId,
-        groupId,
-        category: raw.category,
-        brandEn,
-        brandKr: raw.brandKr ?? "",
-        nameEn: raw.nameEn,
-        nameKr: raw.nameKr ?? "",
-        colorEn: raw.colorEn ?? "",
-        colorKr: raw.colorKr ?? "",
-        sizeEn: raw.sizeEn ?? "",
-        sizeKr,
-        weight,
-        salesRegion: raw.salesRegion ?? "",
-        specs,
-        needsReview,
-      },
-    });
-  }
+  await prisma.product.upsert({
+    where: { brandEn_nameEn_colorEn_sizeEn: { brandEn, nameEn: raw.nameEn, colorEn: raw.colorEn ?? "", sizeEn: raw.sizeEn ?? "" } },
+    create: {
+      productId,
+      groupId,
+      category: raw.category,
+      brandEn,
+      brandKr: raw.brandKr ?? "",
+      nameEn: raw.nameEn,
+      nameKr: raw.nameKr ?? "",
+      colorEn: raw.colorEn ?? "",
+      colorKr: raw.colorKr ?? "",
+      sizeEn: raw.sizeEn ?? "",
+      sizeKr,
+      weight,
+      salesRegion: raw.salesRegion ?? "",
+      naverImageUrl: (raw.currency === "KRW" && raw.imageUrl) ? raw.imageUrl : "",
+      specs,
+      needsReview,
+    },
+    update: {
+      ...(weight && { weight }),
+      ...(Object.keys(specs).length && { specs }),
+      ...(raw.brandKr && { brandKr: raw.brandKr }),
+      ...(raw.nameKr && { nameKr: raw.nameKr }),
+      ...(raw.colorKr && { colorKr: raw.colorKr }),
+      ...(raw.salesRegion && { salesRegion: raw.salesRegion }),
+      ...(raw.currency === "KRW" && raw.imageUrl && { naverImageUrl: raw.imageUrl }),
+      ...(needsReview && { needsReview: true }),
+    },
+  });
 
   // product_source upsert
   const existingSource = await prisma.productSource.findUnique({
@@ -78,7 +74,7 @@ export async function ingestProduct(
       data: {
         productId,
         sourceId,
-        crawlJobId: jobId,
+        crawlJobId: jobId ?? null,
         sourceUrl: raw.sourceUrl,
         price: raw.price,
         currency: raw.currency,
@@ -95,7 +91,7 @@ export async function ingestProduct(
     }
     await prisma.productSource.update({
       where: { id: existingSource.id },
-      data: { price: raw.price, crawlJobId: jobId, lastCrawledAt: new Date() },
+      data: { price: raw.price, crawlJobId: jobId ?? null, lastCrawledAt: new Date() },
     });
   }
 

@@ -33,6 +33,6 @@ describe("generateProductId", () => {
     }
     const id = await generateProductId(prisma, new Date("2026-03-22"));
     expect(id).toBe("260322101");
-    expect(id.length).toBe(9);
+    expect(id.length).toBeGreaterThan(8);
   });
 });

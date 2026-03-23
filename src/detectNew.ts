@@ -29,7 +29,7 @@ async function runDetectNew(): Promise<void> {
       const newProducts = products.filter((p) => newUrls.has(p.sourceUrl));
 
       for (const raw of newProducts) {
-        await ingestProduct(prisma, raw, source.id, "detect_new");
+        await ingestProduct(prisma, raw, source.id, undefined);
       }
     } catch (err) {
       await sendSlackAlert(`:warning: New product detect FAILED: ${source.name}\n\`\`\`${err}\`\`\``);

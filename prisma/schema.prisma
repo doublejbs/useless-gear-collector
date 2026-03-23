@@ -38,7 +38,7 @@ model CrawlSource {
 }
 
 model Product {
-  productId     String   @id @map("product_id") @db.Char(8)
+  productId     String   @id @map("product_id") @db.VarChar(12)
   groupId       String   @map("group_id")
   category      String
   brandKr       String   @default("") @map("brand_kr")
@@ -87,7 +87,7 @@ model CrawlJob {
 
 model ProductSource {
   id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  productId     String    @map("product_id") @db.Char(8)
+  productId     String    @map("product_id") @db.VarChar(12)
   sourceId      String    @map("source_id") @db.Uuid
   crawlJobId    String?   @map("crawl_job_id") @db.Uuid
   sourceUrl     String    @unique @map("source_url")
