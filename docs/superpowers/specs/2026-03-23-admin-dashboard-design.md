@@ -62,10 +62,11 @@ useless-gear-collector/
   - 주간 크롤 (`crawl-weekly.yml`) 실행
   - 신제품 감지 (`crawl-new.yml`) 실행
   - 클릭 시 GitHub Actions API `POST /repos/{repo}/actions/workflows/{id}/dispatches` 호출
-  - 실행 중에는 버튼 비활성화 + 스피너
-- **최근 크롤 잡 테이블** (`crawl_jobs` 테이블 조회):
-  - 컬럼: 소스명, 상태 (running/done/failed 뱃지), 시작시간, 수집 건수, 에러 메시지
-  - 최근 20건, 3초마다 자동 폴링 (running 상태인 잡이 있을 때만)
+  - 버튼 비활성화 조건: `crawl_jobs` 테이블에 `status = "running"` 인 잡이 1개 이상 존재할 때. 버튼 클릭 직후 즉시 비활성화하고 폴링으로 `running` 잡이 사라지면 재활성화.
+  - workflow_dispatch는 즉시 `204`를 반환하고 실제 잡은 수초 후 시작됨. 따라서 클릭 후 최대 10초 동안은 낙관적으로 버튼 비활성화 유지 (타이머 + 폴링 중 먼저 도착하는 조건 사용).
+- **최근 크롤 잡 테이블** (`crawl_jobs` JOIN `crawl_sources` 조회):
+  - 컬럼: 소스명 (`crawl_sources.name`), 상태 (running/done/failed 뱃지), 시작시간 (`startedAt`, null이면 "-" 표시), 수집 건수 (`itemsFound`), 업데이트 건수 (`itemsUpdated`), 에러 메시지 (failed일 때만)
+  - 최근 20건 (`startedAt DESC NULLS LAST`), 3초마다 자동 폴링 (`running` 상태인 잡이 있을 때만)
   - shadcn `Badge`로 상태 표시 (done=green, running=blue, failed=red)
 
 ### `/products` — 제품 목록
@@ -75,16 +76,16 @@ useless-gear-collector/
   - `needs_review` 토글 필터
 - **테이블 컬럼:** 제품ID, 브랜드(영문), 제품명(영문), 카테고리, 무게, 판매지역, needs_review 뱃지
 - 행 클릭 시 `/products/[id]`로 이동
-- 페이지네이션: 50개씩, shadcn `Pagination`
+- 페이지네이션: 50개씩, `createdAt DESC` 정렬, shadcn `Pagination`
 
 ### `/products/[id]` — 제품 편집
 - **기본 정보 폼:**
   - 브랜드 (한/영), 제품명 (한/영), 컬러 (한/영), 사이즈 (한/영)
-  - 무게 (문자열), 판매지역 (select: 국내/해외/국내+해외)
+  - 무게 (문자열), 판매지역 (select: `국내` / `해외` / `국내+해외` — 이 세 값만 허용, DB에 다른 값이 있으면 select에서 공백 옵션으로 표시)
   - `needs_review` 체크박스
 - **스펙 편집:**
-  - 카테고리에 맞는 스펙 키를 `CATEGORY_SPEC_KEYS`에서 읽어 동적으로 폼 렌더링
-  - 각 스펙 키별 텍스트 input
+  - 카테고리에 맞는 스펙 키를 `src/normalizer/specs.ts`의 `CATEGORY_SPEC_KEYS` 상수에서 읽어 동적으로 폼 렌더링. `admin/lib/specs.ts`에서 re-export하여 사용.
+  - 각 스펙 키별 텍스트 input. 알 수 없는 카테고리면 스펙 섹션 미표시.
 - **저장:** Server Action으로 `prisma.product.update` 호출
 - **뒤로가기:** `/products`로 이동
 
@@ -93,6 +94,8 @@ useless-gear-collector/
 - `middleware.ts`에서 모든 `/(dashboard)` 라우트에 대해 세션 쿠키 검증
 - 쿠키 없거나 유효하지 않으면 `/login`으로 리다이렉트
 - `iron-session` 사용, `SESSION_SECRET` 환경변수로 암호화 키 설정
+- 세션 객체 타입: `{ user: { isLoggedIn: boolean } }`
+- `isLoggedIn: true`인 세션만 유효로 처리
 
 ## GitHub Actions Integration
 
@@ -101,7 +104,7 @@ useless-gear-collector/
 export async function triggerWorkflow(workflowFile: string): Promise<void> {
   const repo = process.env.GITHUB_REPO; // "owner/repo"
   const token = process.env.GITHUB_TOKEN;
-  await fetch(
+  const res = await fetch(
     `https://api.github.com/repos/${repo}/actions/workflows/${workflowFile}/dispatches`,
     {
       method: "POST",
@@ -112,6 +115,9 @@ export async function triggerWorkflow(workflowFile: string): Promise<void> {
       body: JSON.stringify({ ref: "main" }),
     }
   );
+  if (!res.ok) {
+    throw new Error(`GitHub API error: ${res.status}`);
+  }
 }
 ```
 
@@ -125,6 +131,7 @@ export async function triggerWorkflow(workflowFile: string): Promise<void> {
 | `SESSION_SECRET` | iron-session 암호화 키 (32자 이상 랜덤 문자열) |
 | `GITHUB_TOKEN` | GitHub PAT (workflow 권한) |
 | `GITHUB_REPO` | `owner/repo` 형식 |
+| `TEST_DATABASE_URL` | 통합 테스트용 DB (로컬 개발 시) |
 
 ## Data Flow
 
