@@ -1,8 +1,25 @@
 import Anthropic from "@anthropic-ai/sdk";
 import * as cheerio from "cheerio";
 import type { RawProduct } from "./types.js";
+import { fetchPageHtml } from "./playwright.js";
 
 const MODEL = "claude-haiku-4-5-20251001";
+const LISTING_SYSTEM_PROMPT = `당신은 백패킹 장비 쇼핑몰의 제품 목록 페이지에서 정보를 추출하는 전문가입니다.
+주어진 HTML에서 모든 제품과 다음 페이지 URL을 아래 JSON 형식으로 추출하세요:
+{
+  "products": [
+    {
+      "sourceUrl": "제품 상세 페이지 URL",
+      "brandEn": "브랜드명(영문)",
+      "nameEn": "제품명(영문)",
+      "price": 숫자 또는 null,
+      "currency": "USD 또는 KRW 등",
+      "imageUrl": "이미지 URL"
+    }
+  ],
+  "nextPageUrl": "다음 페이지 URL 또는 null"
+}
+JSON 외 다른 텍스트는 출력하지 마세요.`;
 const MAX_HTML_BYTES = 5_000;
 const SYSTEM_PROMPT = `당신은 백패킹 장비 제품 페이지에서 정보를 추출하는 전문가입니다.
 주어진 HTML에서 제품 정보를 아래 JSON 형식으로 추출하세요:
@@ -53,5 +70,62 @@ export class AIAgentAdapter {
     } catch {
       return [{ sourceUrl, brandEn: "", nameEn: "", category: "", specsRaw: {}, needsReviewFlag: true }];
     }
+  }
+
+  async fetchProductsFromSite(
+    entryUrl: string,
+    maxPages = 20,
+  ): Promise<RawProduct[]> {
+    const visitedUrls = new Set<string>();
+    const allProducts: RawProduct[] = [];
+
+    let currentUrl: string | null = entryUrl;
+    let pageCount = 0;
+
+    while (currentUrl && !visitedUrls.has(currentUrl) && pageCount < maxPages) {
+      const html = await fetchPageHtml(currentUrl);
+      if (!html) break;
+
+      visitedUrls.add(currentUrl);
+      pageCount++;
+
+      try {
+        const cleaned = stripHtmlNoise(html);
+        const message = await this.client.messages.create({
+          model: MODEL,
+          max_tokens: 2048,
+          system: LISTING_SYSTEM_PROMPT,
+          messages: [{ role: "user", content: cleaned }],
+        });
+        const text = (message.content[0] as { text: string }).text;
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        if (!jsonMatch) {
+          currentUrl = null;
+          continue;
+        }
+        const data = JSON.parse(jsonMatch[0]) as {
+          products: Array<Record<string, unknown>>;
+          nextPageUrl: string | null;
+        };
+
+        const pageProducts: RawProduct[] = (data.products ?? []).map((p) => ({
+          sourceUrl: String(p["sourceUrl"] ?? ""),
+          brandEn: String(p["brandEn"] ?? ""),
+          nameEn: String(p["nameEn"] ?? ""),
+          price: typeof p["price"] === "number" ? p["price"] : undefined,
+          currency: String(p["currency"] ?? "USD"),
+          imageUrl: String(p["imageUrl"] ?? ""),
+          category: "",
+          specsRaw: {},
+        }));
+
+        allProducts.push(...pageProducts);
+        currentUrl = data.nextPageUrl ?? null;
+      } catch {
+        currentUrl = null;
+      }
+    }
+
+    return allProducts;
   }
 }
