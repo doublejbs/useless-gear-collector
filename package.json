@@ -2,6 +2,7 @@
   "name": "useless-gear-collector",
   "version": "0.1.0",
   "type": "module",
+  "workspaces": ["admin"],
   "scripts": {
     "build": "tsc",
     "crawl": "node --env-file=.env dist/crawl.js",
