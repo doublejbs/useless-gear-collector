@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -40,7 +41,7 @@ export default async function ProductsPage({
 
   const where = {
     ...(category && { category }),
-    ...(brand && { brandEn: { contains: brand, mode: "insensitive" } }),
+    ...(brand && { brandEn: { contains: brand, mode: Prisma.QueryMode.insensitive } }),
     ...(needsReview !== undefined && { needsReview }),
   };
 
