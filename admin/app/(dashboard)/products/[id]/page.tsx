@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { CATEGORY_SPEC_KEYS } from "@/lib/specs";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -43,7 +43,7 @@ export default async function ProductEditPage({
   return (
     <div className="max-w-2xl space-y-6">
       <div className="flex items-center gap-3">
-        <Link href="/products" className={buttonVariants({ variant: "outline", size: "sm" })}>← 목록</Link>
+        <Link href="/products" className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 text-sm font-medium hover:bg-muted h-7">← 목록</Link>
         <h1 className="text-xl font-semibold">
           {product.brandEn} {product.nameEn}
         </h1>
@@ -157,7 +157,7 @@ export default async function ProductEditPage({
 
         <div className="flex gap-3">
           <Button type="submit">저장</Button>
-          <Link href="/products" className={buttonVariants({ variant: "outline" })}>취소</Link>
+          <Link href="/products" className="inline-flex items-center justify-center rounded-lg border border-border bg-background px-2.5 text-sm font-medium hover:bg-muted h-8">취소</Link>
         </div>
       </form>
     </div>
