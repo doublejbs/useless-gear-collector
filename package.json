@@ -5,8 +5,8 @@
   "workspaces": ["admin"],
   "scripts": {
     "build": "tsc",
-    "crawl": "node --env-file=.env dist/crawl.js",
-    "detect-new": "node --env-file=.env dist/detectNew.js",
+    "crawl": "node --env-file-if-exists=.env dist/crawl.js",
+    "detect-new": "node --env-file-if-exists=.env dist/detectNew.js",
     "test": "vitest run",
     "test:watch": "vitest"
   },
