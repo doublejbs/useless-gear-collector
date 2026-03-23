@@ -12,7 +12,7 @@ export default async function CrawlPage() {
       include: { source: { select: { name: true } } },
     }),
     prisma.crawlSource.findMany({
-      where: { adapterType: "ai_agent" },
+      where: { adapterType: "ai_agent", isActive: true },
       orderBy: { name: "asc" },
     }),
   ]);

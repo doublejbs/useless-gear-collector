@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import {
   saveBrandSourceAction,
   toggleBrandSourceAction,
+  deleteBrandSourceAction,
   getBrandSourcesAction,
 } from "./actions";
 
@@ -59,6 +60,18 @@ export function BrandSitesEditor({
     });
   }
 
+  function handleDelete(id: string) {
+    startTransition(async () => {
+      const result = await deleteBrandSourceAction(id);
+      if (result.ok) {
+        toast.success("브랜드 소스 삭제 완료");
+        await refresh();
+      } else {
+        toast.error(`삭제 실패: ${result.error}`);
+      }
+    });
+  }
+
   function handleToggle(id: string, currentActive: boolean) {
     startTransition(async () => {
       const result = await toggleBrandSourceAction(id, !currentActive);
@@ -98,15 +111,26 @@ export function BrandSitesEditor({
                 </p>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => handleToggle(s.id, s.isActive)}
-              disabled={isPending}
-              className={s.isActive ? "text-slate-400 hover:text-red-500" : "text-slate-400 hover:text-green-600"}
-            >
-              {s.isActive ? "비활성화" : "활성화"}
-            </Button>
+            <div className="flex items-center gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleToggle(s.id, s.isActive)}
+                disabled={isPending}
+                className={s.isActive ? "text-slate-400 hover:text-red-500" : "text-slate-400 hover:text-green-600"}
+              >
+                {s.isActive ? "비활성화" : "활성화"}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => handleDelete(s.id)}
+                disabled={isPending}
+                className="text-slate-400 hover:text-red-600"
+              >
+                삭제
+              </Button>
+            </div>
           </div>
         ))}
         {sources.length === 0 && (
