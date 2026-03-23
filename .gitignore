@@ -5,3 +5,5 @@ dist/
 admin/.env
 admin/.next/
 .superpowers/
+.env.local
+admin/.env.local
