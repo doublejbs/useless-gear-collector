@@ -1,9 +1,9 @@
 {
   "node": {
-    "00403d7e8d07a83b78feb1ae424107a9f63e909f82": {
+    "00a3f862767312978a7a1c0bd852de108d6753500c": {
       "workers": {
         "app/(dashboard)/page": {
-          "moduleId": "(action-browser)/../node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fuser%2FDocuments%2FGitHub%2Fuseless-gear-collector%2Fadmin%2Fapp%2F(dashboard)%2Factions.ts%22%2C%5B%7B%22id%22%3A%2200403d7e8d07a83b78feb1ae424107a9f63e909f82%22%2C%22exportedName%22%3A%22getJobsAction%22%2C%22filename%22%3A%22app%2F(dashboard)%2Factions.ts%22%7D%2C%7B%22id%22%3A%22401a5cdd6e12c21b0aa9edc87f990270a361151a9f%22%2C%22exportedName%22%3A%22triggerCrawlAction%22%2C%22filename%22%3A%22app%2F(dashboard)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "moduleId": "(action-browser)/../node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fuser%2FDocuments%2FGitHub%2Fuseless-gear-collector%2Fadmin%2Fapp%2F(dashboard)%2Factions.ts%22%2C%5B%7B%22id%22%3A%2200a3f862767312978a7a1c0bd852de108d6753500c%22%2C%22exportedName%22%3A%22getJobsAction%22%2C%22filename%22%3A%22app%2F(dashboard)%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240b9d2159a29a583484c54df4052409812be303a3e%22%2C%22exportedName%22%3A%22triggerCrawlAction%22%2C%22filename%22%3A%22app%2F(dashboard)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
           "async": false
         }
       },
@@ -13,10 +13,10 @@
       "filename": "app/(dashboard)/actions.ts",
       "exportedName": "getJobsAction"
     },
-    "401a5cdd6e12c21b0aa9edc87f990270a361151a9f": {
+    "40b9d2159a29a583484c54df4052409812be303a3e": {
       "workers": {
         "app/(dashboard)/page": {
-          "moduleId": "(action-browser)/../node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fuser%2FDocuments%2FGitHub%2Fuseless-gear-collector%2Fadmin%2Fapp%2F(dashboard)%2Factions.ts%22%2C%5B%7B%22id%22%3A%2200403d7e8d07a83b78feb1ae424107a9f63e909f82%22%2C%22exportedName%22%3A%22getJobsAction%22%2C%22filename%22%3A%22app%2F(dashboard)%2Factions.ts%22%7D%2C%7B%22id%22%3A%22401a5cdd6e12c21b0aa9edc87f990270a361151a9f%22%2C%22exportedName%22%3A%22triggerCrawlAction%22%2C%22filename%22%3A%22app%2F(dashboard)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
+          "moduleId": "(action-browser)/../node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22%2FUsers%2Fuser%2FDocuments%2FGitHub%2Fuseless-gear-collector%2Fadmin%2Fapp%2F(dashboard)%2Factions.ts%22%2C%5B%7B%22id%22%3A%2200a3f862767312978a7a1c0bd852de108d6753500c%22%2C%22exportedName%22%3A%22getJobsAction%22%2C%22filename%22%3A%22app%2F(dashboard)%2Factions.ts%22%7D%2C%7B%22id%22%3A%2240b9d2159a29a583484c54df4052409812be303a3e%22%2C%22exportedName%22%3A%22triggerCrawlAction%22%2C%22filename%22%3A%22app%2F(dashboard)%2Factions.ts%22%7D%5D%5D%5D&__client_imported__=true!",
           "async": false
         }
       },
@@ -28,5 +28,5 @@
     }
   },
   "edge": {},
-  "encryptionKey": "wAOOWtDUOklUec5AvtJAH2XGnUc0oMKhsJd8OQ4IQoY="
+  "encryptionKey": "CXn+DmN6JJB7Jh9B75L2hs5RgnhGZsoLxQ9lJzlp6FQ="
 }
