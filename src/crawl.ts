@@ -1,10 +1,9 @@
 import { prisma } from "./db.js";
-import { NaverAdapter } from "./adapters/naver.js";
 import { AIAgentAdapter } from "./adapters/aiAgent.js";
-import { fetchPageHtml } from "./adapters/playwright.js";
 import { ingestProduct } from "./pipeline/ingest.js";
 import { sendSlackAlert } from "./alerts/slack.js";
 import { config } from "./config.js";
+import type { RawProduct } from "./adapters/types.js";
 
 async function runCrawl(): Promise<void> {
   const sources = await prisma.crawlSource.findMany({ where: { isActive: true } });
@@ -16,24 +15,19 @@ async function runCrawl(): Promise<void> {
 
     let itemsFound = 0;
     try {
-      let products: Awaited<ReturnType<NaverAdapter["fetchProducts"]>> = [];
-      if (source.adapterType === "naver_api") {
-        const adapter = new NaverAdapter(config.naverClientId, config.naverClientSecret);
+      let products: RawProduct[] = [];
+
+      if (source.adapterType === "ai_agent") {
+        const adapter = new AIAgentAdapter(config.anthropicApiKey);
         const cfg = (source.config as Record<string, unknown>) ?? {};
-        const queries = (cfg["queries"] as string[]) ?? [cfg["query"] as string ?? "백패킹"];
-        for (const q of queries) {
-          const batch = await adapter.fetchProducts({ query: q });
-          products.push(...batch);
+        const entryUrl = (cfg["entry_url"] as string) ?? "";
+        const maxPages = (cfg["max_pages"] as number) ?? 20;
+        if (entryUrl) {
+          products = await adapter.fetchProductsFromSite(entryUrl, maxPages);
         }
       } else if (source.adapterType === "playwright") {
-        const cfg = (source.config as Record<string, string>) ?? {};
-        const html = await fetchPageHtml(cfg["entry_url"] ?? "");
-        products = html ? [] : [];
-      } else if (source.adapterType === "ai_agent") {
-        const adapter = new AIAgentAdapter(config.anthropicApiKey);
-        const cfg = (source.config as Record<string, string>) ?? {};
-        const html = await fetchPageHtml(cfg["entry_url"] ?? "");
-        if (html) products = await adapter.extractFromHtml(html, cfg["entry_url"] ?? "");
+        // TODO: playwright-only sources (REI, Backcountry 등) — 별도 구현 예정
+        products = [];
       }
 
       for (const raw of products) {
