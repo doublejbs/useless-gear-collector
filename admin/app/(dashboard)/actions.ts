@@ -22,27 +22,70 @@ export async function getJobsAction() {
   });
 }
 
-export async function getQueriesAction(): Promise<string[]> {
-  const source = await prisma.crawlSource.findFirst({
-    where: { adapterType: "naver_api", isActive: true },
+export async function getBrandSourcesAction() {
+  return prisma.crawlSource.findMany({
+    where: { adapterType: "ai_agent" },
+    orderBy: { name: "asc" },
   });
-  if (!source) return [];
-  const config = (source.config as Record<string, unknown>) ?? {};
-  return (config["queries"] as string[]) ?? [];
 }
 
-export async function saveQueriesAction(
-  queries: string[]
+export async function saveBrandSourceAction(params: {
+  id?: string;
+  name: string;
+  entryUrl: string;
+  newArrivalsUrl?: string;
+  maxPages?: number;
+}): Promise<{ ok: boolean; error?: string }> {
+  try {
+    const config = {
+      entry_url: params.entryUrl,
+      ...(params.newArrivalsUrl ? { new_arrivals_url: params.newArrivalsUrl } : {}),
+      ...(params.maxPages ? { max_pages: params.maxPages } : {}),
+    };
+
+    if (params.id) {
+      await prisma.crawlSource.update({
+        where: { id: params.id },
+        data: { name: params.name, config },
+      });
+    } else {
+      await prisma.crawlSource.create({
+        data: {
+          name: params.name,
+          adapterType: "ai_agent",
+          config,
+          isActive: true,
+        },
+      });
+    }
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
+
+export async function deleteBrandSourceAction(
+  id: string
 ): Promise<{ ok: boolean; error?: string }> {
   try {
-    const source = await prisma.crawlSource.findFirst({
-      where: { adapterType: "naver_api", isActive: true },
-    });
-    if (!source) return { ok: false, error: "네이버 크롤 소스를 찾을 수 없습니다." };
-
     await prisma.crawlSource.update({
-      where: { id: source.id },
-      data: { config: { queries } },
+      where: { id },
+      data: { isActive: false },
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: String(err) };
+  }
+}
+
+export async function toggleBrandSourceAction(
+  id: string,
+  isActive: boolean
+): Promise<{ ok: boolean; error?: string }> {
+  try {
+    await prisma.crawlSource.update({
+      where: { id },
+      data: { isActive },
     });
     return { ok: true };
   } catch (err) {
