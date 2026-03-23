@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { stripHtmlNoise, AIAgentAdapter } from "../../src/adapters/aiAgent.js";
+import * as playwright from "../../src/adapters/playwright.js";
 
 describe("stripHtmlNoise", () => {
   it("removes script tags", () => {
@@ -40,8 +41,6 @@ describe("AIAgentAdapter", () => {
     expect(products[0].specsRaw).toEqual({});
   });
 });
-
-import * as playwright from "../../src/adapters/playwright.js";
 
 describe("AIAgentAdapter.fetchProductsFromSite", () => {
   let adapter: AIAgentAdapter;
