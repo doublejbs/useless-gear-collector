@@ -64,6 +64,8 @@ export async function saveBrandSourceAction(params: {
   }
 }
 
+// Soft-deletes a source (marks as inactive). Unlike toggleBrandSourceAction,
+// this is intended as a permanent removal — the record is kept for historical FK integrity.
 export async function deleteBrandSourceAction(
   id: string
 ): Promise<{ ok: boolean; error?: string }> {
